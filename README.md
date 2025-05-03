@@ -26,17 +26,19 @@ Données brutes → ETL Python → PostgreSQL (Supabase) → API FastAPI → F
 
 ## Structure du dépôt
 
-├─ clean/                   # CSV nettoyés prêts à l’import
-├─ notebooks/               # EDA Jupyter
-├─ scripts/
-│   ├─ key_columns_finder.py     # détection colonnes clé (PK) dans CSV bruts
-│   ├─ clean_data.py             # pipeline de nettoyage initial
-│   ├─ assign_neighbourhoods.py  # jointure spatiale → quartier
-│   ├─ validate_clean_data.py    # contrôles qualité avant import
-│   └─ import_airbnb_supabase.sh # import CSV → Supabase (optionnel
-├─ backend/                 # FastAPI (src/)
-├─ frontend/                # Nuxt 3 (app/)
-└─ README.md
+```
+├─clean/                   # CSV nettoyés prêts à l’import
+├─notebooks/               # EDA Jupyter
+├─scripts/
+│   ├─key_columns_finder.py     # détection colonnes clé (PK) dans CSV bruts
+│   ├─clean_data.py             # pipeline de nettoyage initial
+│   ├─assign_neighbourhoods.py  # jointure spatiale → quartier
+│   ├─validate_clean_data.py    # contrôles qualité avant import
+│   └─import_airbnb_supabase.sh # import CSV → Supabase (optionnel
+├─backend/                 # FastAPI (src/)
+├─frontend/                # Nuxt 3 (app/)
+└─README.md
+```
 
 ## Pipeline ETL & Qualité
 

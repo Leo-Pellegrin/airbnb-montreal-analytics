@@ -17,7 +17,7 @@ Ce document détaille chaque étape de l’analyse exploratoire, avec objectifs,
 
 ---
 
-## Checklist de validation
+## Checklist de validation
 
 - [ ] Aucun `NaN` critique après nettoyage (`validate_clean_data.py` OK)
 - [ ] Histogrammes prix sans valeurs négatives ni > 10 000 $
@@ -28,7 +28,7 @@ Ce document détaille chaque étape de l’analyse exploratoire, avec objectifs,
 
 ---
 
-## Conventions de nommage
+## Conventions de nommage
 
 - **Notebooks** : `eda_##_<topic>.ipynb`
 - **Plots** : `assets/plots/<topic>_<yyyymmdd>.png`
@@ -36,7 +36,7 @@ Ce document détaille chaque étape de l’analyse exploratoire, avec objectifs,
 
 ---
 
-## Prochaine mise à jour
+## Prochaine mise à jour
 
 Une fois l’EDA terminée, les KPI validés alimenteront :
 1. **Endpoints FastAPI** (`/stats/price-median`, `/stats/occupancy`, …)
