@@ -1,0 +1,31 @@
+# ---- Python ---------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+
+# ----  Données CSV ---------------------------------------
+clean/*.csv
+dataset/
+
+# ---- Jupyter Notebooks ---------------------------------------
+.ipynb_checkpoints/
+
+# ---- Node / Nuxt ---------------------------------------------
+frontend/.nuxt/
+frontend/.output/
+frontend/node_modules/
+frontend/.env*
+node_modules/
+package.json/
+# pnpm
+pnpm-lock.yaml
+
+# ---- Logs -----------------------------------------------------
+*.log
+
+# ---- OS / IDE -------------------------------------------------
+.DS_Store
+.idea/
+.vscode/
