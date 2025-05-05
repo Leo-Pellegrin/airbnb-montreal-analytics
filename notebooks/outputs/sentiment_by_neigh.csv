@@ -1,0 +1,32 @@
+neighbourhood,avg_sentiment
+Kirkland,0.9696
+L'Île-Bizard-Sainte-Geneviève,0.8646227272727274
+Beaconsfield,0.7189620202020203
+Westmount,0.690224115086909
+Montréal-Ouest,0.6736555555555556
+Lachine,0.6444536075336298
+Pointe-Claire,0.6395355519070394
+Unknown,0.6131017030957958
+Mont-Royal,0.5998254067229749
+Le Plateau-Mont-Royal,0.5996403104110324
+Ville-Marie,0.5985489041960325
+LaSalle,0.5899128070611848
+Le Sud-Ouest,0.5864924603217443
+Dollard-des-Ormeaux,0.5804088372545881
+Rosemont-La Petite-Patrie,0.5713489443678714
+Pierrefonds-Roxboro,0.555365823922325
+Rivière-des-Prairies-Pointe-aux-Trembles,0.54523663447035
+Verdun,0.5386750769534374
+Côte-des-Neiges-Notre-Dame-de-Grâce,0.5136246202762099
+Saint-Laurent,0.5120450598944146
+Outremont,0.5076922522951187
+Mercier-Hochelaga-Maisonneuve,0.5024187232160167
+Anjou,0.49933210602540773
+Villeray-Saint-Michel-Parc-Extension,0.48313066804214927
+Côte-Saint-Luc,0.4820858590242266
+Ahuntsic-Cartierville,0.4738716295847242
+Dorval,0.44371349218788875
+Saint-Léonard,0.4267049685493964
+Montréal-Est,0.3244759166666667
+Sainte-Anne-de-Bellevue,0.23287777777777777
+Montréal-Nord,0.21146139285714285
