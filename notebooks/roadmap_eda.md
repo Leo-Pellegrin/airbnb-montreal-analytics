@@ -13,25 +13,24 @@ Ce document détaille chaque étape de l’analyse exploratoire, avec objectifs,
 | 7 | **Corrélations** | Corréler prix ↔︎ reviews, rating, min nights | `eda_07_correlations.ipynb` | Heatmap PNG + interprétation |
 | 8 | **Analyse des avis** | Sentiment + mots clés récurrents | `eda_08_reviews_sentiment.ipynb` | Word cloud + tableau sentiment |
 | 9 | **Cartographie** | Carte choroplèthe prix médian / quartier | `eda_09_map.ipynb` | `map.html` interactif |
-| 10 | **Synthèse finale** | Regrouper tous les insights clés | `docs/insights_summary.md` | Document Markdown prêt Notion |
+| 10 | **Synthèse finale** | Regrouper tous les insights clés | `summary_eda.md` | Document Markdown |
 
 ---
 
 ## Checklist de validation
 
-- [ ] Aucun `NaN` critique après nettoyage (`validate_clean_data.py` OK)
-- [ ] Histogrammes prix sans valeurs négatives ni > 10 000 $
-- [ ] `%` d’occupation compris entre 0 et 100
-- [ ] Corrélations interprétées (expliquer si faibles)
-- [ ] Carte affiche 100 % des quartiers (matching GeoJSON)
-- [ ] Rapport final relu & copié dans Notion
+- [x] Aucun `NaN` critique après nettoyage (`validate_clean_data.py` OK)
+- [x] Histogrammes prix sans valeurs négatives ni > 10 000 $
+- [x] `%` d’occupation compris entre 0 et 100
+- [x] Corrélations interprétées (expliquer si faibles)
+- [x] Carte affiche 100 % des quartiers (matching GeoJSON)
+- [x] Rapport final relu 
 
 ---
 
 ## Conventions de nommage
 
 - **Notebooks** : `eda_##_<topic>.ipynb`
-- **Plots** : `assets/plots/<topic>_<yyyymmdd>.png`
 - **Données dérivées** : `outputs/<filename>.csv` ou `.parquet`
 
 ---
