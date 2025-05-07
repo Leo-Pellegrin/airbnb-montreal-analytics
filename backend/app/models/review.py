@@ -2,12 +2,12 @@ from datetime import date
 from typing import Optional
 from sqlmodel import SQLModel, Field
 
-class Review(SQLModel, table=True):
+class Reviews(SQLModel, table=True):
     """
     Table des avis
     """
     id: Optional[int] = Field(default=None, primary_key=True)
-    listing_id: int = Field(foreign_key="listing.id", index=True)
+    listing_id: int = Field(foreign_key="listings.id", index=True)
     date: date
     reviewer_id: Optional[int] = Field(default=None)
     reviewer_name: Optional[str] = Field(default=None)
