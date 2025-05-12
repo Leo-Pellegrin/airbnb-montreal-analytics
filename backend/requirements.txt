@@ -6,3 +6,4 @@ python-jose[cryptography]==3.3.0  # JWT
 passlib[bcrypt]==1.7.4      # hashing pw
 pydantic==2.7.1             # schémas (dépendance FastAPI v0.111)
 email-validator==2.1.1      # si besoin de valider des emails
+sqlmodel>=0.0.8
