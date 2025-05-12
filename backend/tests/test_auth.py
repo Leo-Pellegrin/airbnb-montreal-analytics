@@ -147,7 +147,7 @@ def test_get_roles_unauthorized():
 
 
 def test_get_roles_wrong_jwt():
-    res = client.get("/api/v1/roles", headers={"Authorization": f"Bearer wrongtoken"})
+    res = client.get("/api/v1/roles", headers={"Authorization": "Bearer wrongtoken"})
     assert res.status_code == 401
 
 

@@ -201,9 +201,7 @@ def test_stats_by_neigh_valid(auth_headers):
     assert isinstance(stats["median_price"], float)
     assert isinstance(stats["occupancy_pct"], float)
 
-
 # --- Stats history ---
-
 
 def test_stats_history_invalid_neigh(auth_headers):
     """History pour un quartier inconnu → liste vide"""
@@ -211,9 +209,7 @@ def test_stats_history_invalid_neigh(auth_headers):
     assert res.status_code == 200
     assert res.json() == []
 
-
 def test_stats_history_valid_neigh(auth_headers):
-    """History pour un quartier valide → liste d’items avec period_id, median_price, occupancy_pct"""
     res0 = client.get("/api/v1/listings?limit=1", headers=auth_headers)
     data0 = res0.json()
     if not data0:
