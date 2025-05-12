@@ -1,8 +1,10 @@
-from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
-from app.core.database import create_db_and_tables
+from fastapi import FastAPI
+
 from app.api.v1.router import api_router
+from app.core.database import create_db_and_tables
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -10,6 +12,7 @@ async def lifespan(app: FastAPI):
     create_db_and_tables()
     yield
     # Shutdown : pas de tâche spécifique
+
 
 app = FastAPI(
     title="Airbnb MTL API",

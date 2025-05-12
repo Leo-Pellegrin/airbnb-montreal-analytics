@@ -1,6 +1,6 @@
-from datetime import date
-from typing import Optional
-from sqlmodel import SQLModel, Field
+
+from sqlmodel import Field, SQLModel
+
 
 class Neighbourhoods(SQLModel, table=True):
     neighbourhood: str = Field(primary_key=True)

@@ -1,15 +1,16 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, Session, select
 from passlib.context import CryptContext
+from sqlmodel import Session, SQLModel, select
 
-from app.main import app
 from app.core.database import engine
-from app.models.user import User
+from app.main import app
 from app.models.role import Role
+from app.models.user import User
 
 client = TestClient(app)
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_db():
@@ -20,36 +21,34 @@ def setup_db():
     hashed = pwd_ctx.hash(test_password)
     with Session(engine) as session:
         user = User(
-            email="test@example.com", 
-            username="testuser", 
-            password_hash=hashed, 
-            full_name="Test User"
+            email="test@example.com",
+            username="testuser",
+            password_hash=hashed,
+            full_name="Test User",
         )
         session.add(user)
         session.commit()
         session.refresh(user)
         # Insertion d'un rôle de test
-        role = Role(
-            name="tester1", 
-            description="Rôle de test"
-        )
+        role = Role(name="tester1", description="Rôle de test")
         session.add(role)
         session.commit()
         session.refresh(role)
     yield
     # Nettoyage des tables (cascade drop & recreate schema)
-    
+
     from sqlalchemy import text
+
     with engine.begin() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE"))
         conn.execute(text("CREATE SCHEMA public"))
+
 
 @pytest.fixture()
 def auth_headers():
     # Connexion pour obtenir un token JWT
     res = client.post(
-        "/api/v1/login", 
-        json={"email": "test@example.com", "password": "secret123"}
+        "/api/v1/login", json={"email": "test@example.com", "password": "secret123"}
     )
     assert res.status_code == 200
     token = res.json()["access_token"]
@@ -58,8 +57,7 @@ def auth_headers():
 
 def test_login_success():
     res = client.post(
-        "/api/v1/login", 
-        json={"email": "test@example.com", "password": "secret123"}
+        "/api/v1/login", json={"email": "test@example.com", "password": "secret123"}
     )
     assert res.status_code == 200
     data = res.json()
@@ -69,8 +67,7 @@ def test_login_success():
 
 def test_login_failure():
     res = client.post(
-        "/api/v1/login", 
-        json={"email": "wrong@example.com", "password": "badpass"}
+        "/api/v1/login", json={"email": "wrong@example.com", "password": "badpass"}
     )
     assert res.status_code == 401
 
@@ -82,16 +79,19 @@ def test_user():
         user = session.exec(stmt).first()
         return {"id": user.id, "email": user.email, "username": user.username}
 
+
 def test_get_user_unauthorized(test_user):
     res = client.get(f"/api/v1/users/{test_user['id']}")
     assert res.status_code == 403
 
+
 def test_get_user_wrong_token(test_user):
     res = client.get(
         f"/api/v1/users/{test_user['id']}",
-        headers={"Authorization": "Bearer wrongtoken"}
+        headers={"Authorization": "Bearer wrongtoken"},
     )
     assert res.status_code == 401
+
 
 def test_get_user_authorized(auth_headers, test_user):
     res = client.get(f"/api/v1/users/{test_user['id']}", headers=auth_headers)
@@ -107,7 +107,7 @@ def test_create_user(auth_headers):
         "email": "new@example.com",
         "username": "newuser",
         "password": "newpass",
-        "full_name": "New User"
+        "full_name": "New User",
     }
     res = client.post("/api/v1/users", json=payload, headers=auth_headers)
     assert res.status_code == 201
@@ -119,7 +119,9 @@ def test_create_user(auth_headers):
 
 def test_update_user(auth_headers, test_user):
     update = {"full_name": "Updated User"}
-    res = client.put(f"/api/v1/users/{test_user['id']}", json=update, headers=auth_headers)
+    res = client.put(
+        f"/api/v1/users/{test_user['id']}", json=update, headers=auth_headers
+    )
     assert res.status_code == 200
     assert res.json()["full_name"] == "Updated User"
 
@@ -130,7 +132,7 @@ def test_delete_user(auth_headers):
         "email": "del@example.com",
         "username": "todel",
         "password": "delpass",
-        "full_name": "To Delete"
+        "full_name": "To Delete",
     }
     res = client.post("/api/v1/users", json=payload, headers=auth_headers)
     assert res.status_code == 201
@@ -142,6 +144,7 @@ def test_delete_user(auth_headers):
 def test_get_roles_unauthorized():
     res = client.get("/api/v1/roles")
     assert res.status_code == 403
+
 
 def test_get_roles_wrong_jwt():
     res = client.get("/api/v1/roles", headers={"Authorization": f"Bearer wrongtoken"})

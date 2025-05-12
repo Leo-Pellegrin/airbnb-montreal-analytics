@@ -1,11 +1,14 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, HTTPException
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
+
 from app.core.database import get_session
 from app.models.listing import Listings
 from app.models.review import ReviewRead, Reviews
 
 router = APIRouter()
+
 
 @router.get(
     "/listings",
@@ -16,7 +19,7 @@ def read_listings(
     *,
     limit: int = Query(20, ge=1, le=100, description="Nombre max de résultats"),
     offset: int = Query(0, ge=0, description="Décalage pour la pagination"),
-    room_type: Optional[str]  = Query(None, description="Type de logement"),
+    room_type: Optional[str] = Query(None, description="Type de logement"),
     price_max: Optional[float] = Query(None, ge=0, description="Prix max"),
     session: Session = Depends(get_session),
 ):
@@ -35,6 +38,7 @@ def read_listings(
         raise HTTPException(status_code=404, detail="No listings found")
     return results
 
+
 @router.get(
     "/listings/{id}",
     response_model=Listings,
@@ -45,6 +49,7 @@ def read_listing(id: int, session: Session = Depends(get_session)):
     if not listing:
         raise HTTPException(404, "Listing not found")
     return listing
+
 
 @router.get(
     "/listings/{id}/reviews",

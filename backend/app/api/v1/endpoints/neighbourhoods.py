@@ -1,10 +1,13 @@
 from typing import List
+
 from fastapi import APIRouter, Depends
-from sqlmodel import Session, select, distinct
+from sqlmodel import Session, distinct, select
+
 from app.core.database import get_session
 from app.models.listing import Listings
 
 router = APIRouter()
+
 
 @router.get(
     "/neighbourhoods",

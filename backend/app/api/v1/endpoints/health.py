@@ -2,9 +2,11 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
+
 from app.core.database import get_session
 
 router = APIRouter()
+
 
 @router.get("/health", tags=["system"])
 def health(session: Session = Depends(get_session)):

@@ -2,28 +2,28 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, Session
+from sqlmodel import Session, SQLModel
 
-from app.main import app
 from app.core.database import engine
+from app.main import app
+from app.models.calendar_weekly import calendar_weekly
+from app.models.listing import Listings
 # Import all models to ensure they're registered with SQLModel
 from app.models.neighbourhoods import Neighbourhoods
-from app.models.listing import Listings
-from app.models.calendar_weekly import calendar_weekly
-from app.models.review import Reviews
 
 client = TestClient(app)
+
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_db():
     SQLModel.metadata.create_all(engine)
-    
+
     with Session(engine) as session:
         # Ajout d'un quartier de test
         test_neighbourhood = Neighbourhoods(neighbourhood="Test Neighbourhood")
         session.add(test_neighbourhood)
         session.commit()
-        
+
         # Ajout d'un listing de test
         test_listing = Listings(
             id=1,  # ID explicite pour référence
@@ -31,33 +31,35 @@ def setup_db():
             latitude=45.5,
             longitude=-73.5,
             neighbourhood="Test Neighbourhood",
-            room_type="Entire home/apt"
+            room_type="Entire home/apt",
         )
         session.add(test_listing)
         session.commit()
 
         # Ajout de données calendar_weekly
-        from datetime import date, timedelta
+        from datetime import date
+
         today = date.today()
         test_calendar = calendar_weekly(
             listing_id=1,  # Référence au listing créé
             week_id=today,
             avg_price=100.0,
-            occupancy_pct=0.5
+            occupancy_pct=0.5,
         )
         session.add(test_calendar)
         session.commit()
-    
+
     yield
-    
+
     from sqlalchemy import text
+
     with engine.begin() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE"))
         conn.execute(text("CREATE SCHEMA public"))
 
+
 @pytest.fixture(scope="module")
 def test_user():
-    
     SQLModel.metadata.create_all(engine)
 
     password = "testpassword"
@@ -65,7 +67,7 @@ def test_user():
         "email": "testuser@example.com",
         "username": "testuser",
         "password": password,
-        "full_name": "Test User"
+        "full_name": "Test User",
     }
     # Création
     res = client.post("/api/v1/users", json=payload)
@@ -76,6 +78,7 @@ def test_user():
 
     # Teardown
     client.delete(f"/api/v1/users/{user_id}")
+
 
 @pytest.fixture(scope="module")
 def auth_headers(test_user):
@@ -89,6 +92,7 @@ def auth_headers(test_user):
     assert token, "No access_token in login response"
     return {"Authorization": f"Bearer {token}"}
 
+
 # --- Health Check ---
 def test_health_success(auth_headers):
     res = client.get("/api/v1/health", headers=auth_headers)
@@ -101,6 +105,7 @@ def test_health_success(auth_headers):
 
 # --- Listings ---
 
+
 def test_read_listings_default(auth_headers):
     res = client.get("/api/v1/listings", headers=auth_headers)
     assert res.status_code == 200
@@ -112,13 +117,20 @@ def test_read_listings_default(auth_headers):
         item = data[0]
         # clés essentielles présentes
         assert set(item.keys()) >= {
-            "id", "price", "latitude", "longitude", "neighbourhood", "room_type"
+            "id",
+            "price",
+            "latitude",
+            "longitude",
+            "neighbourhood",
+            "room_type",
         }
 
 
 @pytest.mark.parametrize("limit,offset", [(5, 0), (5, 5)])
 def test_listings_pagination(limit, offset, auth_headers):
-    res = client.get(f"/api/v1/listings?limit={limit}&offset={offset}", headers=auth_headers)
+    res = client.get(
+        f"/api/v1/listings?limit={limit}&offset={offset}", headers=auth_headers
+    )
     assert res.status_code == 200
     data = res.json()
     assert isinstance(data, list)
@@ -134,6 +146,7 @@ def test_listings_filter_room_type(rt, auth_headers):
 
 
 # --- Listing Detail ---
+
 
 @pytest.mark.parametrize("invalid_id", [0, 9999999])
 def test_listing_detail_not_found(invalid_id, auth_headers):
@@ -153,11 +166,17 @@ def test_listing_detail_found(auth_headers):
     detail = res.json()
     assert detail["id"] == lid
     assert set(detail.keys()) >= {
-        "id", "price", "latitude", "longitude", "neighbourhood", "room_type"
+        "id",
+        "price",
+        "latitude",
+        "longitude",
+        "neighbourhood",
+        "room_type",
     }
 
 
 # --- Stats by neighbourhood ---
+
 
 def test_stats_by_neigh_invalid(auth_headers):
     """Quartier inconnu → 404"""
@@ -185,6 +204,7 @@ def test_stats_by_neigh_valid(auth_headers):
 
 # --- Stats history ---
 
+
 def test_stats_history_invalid_neigh(auth_headers):
     """History pour un quartier inconnu → liste vide"""
     res = client.get("/api/v1/stats/InvalidNeighbourhood/history", headers=auth_headers)
@@ -208,6 +228,6 @@ def test_stats_history_valid_neigh(auth_headers):
         item = hist[0]
         expected_keys = {"median_price", "occupancy_pct"}
         assert expected_keys.issubset(item.keys())
-        # period_id peut être str ou int        
+        # period_id peut être str ou int
         assert isinstance(item["median_price"], float)
         assert isinstance(item["occupancy_pct"], float)

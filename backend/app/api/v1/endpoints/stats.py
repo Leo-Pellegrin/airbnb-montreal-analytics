@@ -1,13 +1,16 @@
 # backend/app/api/v1/endpoints/stats.py
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, text, select
 from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session, select, text
+
 from app.core.database import get_session
-from app.models.stats import StatsOut
 from app.models.neighbourhoods import Neighbourhoods
+from app.models.stats import StatsOut
 
 router = APIRouter()
+
 
 @router.get(
     "/stats/{neigh}",
@@ -48,7 +51,9 @@ async def stats_by_neigh(
     )
     result = session.exec(stmt.bindparams(neigh=neigh)).first()
     if result is None or result._mapping["median_price"] is None:
-        raise HTTPException(status_code=404, detail="Aucune donnée disponible pour ce quartier")
+        raise HTTPException(
+            status_code=404, detail="Aucune donnée disponible pour ce quartier"
+        )
     return StatsOut(**result._mapping)
 
 
@@ -62,7 +67,7 @@ def stats_history(
     session: Session = Depends(get_session),
 ):
     """
-    Historique hebdomadaire des KPI (médiane prix + moyenne occu) 
+    Historique hebdomadaire des KPI (médiane prix + moyenne occu)
     par week_id pour le quartier `neigh`, limité aux 52 dernières semaines.
     """
     stmt = text(
