@@ -4,7 +4,6 @@ __pycache__/
 *.egg-info/
 notebooks/.venv/
 backend/.venv/
-backend/app
 .env
 
 # ----  Données CSV ---------------------------------------

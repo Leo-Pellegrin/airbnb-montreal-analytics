@@ -26,12 +26,11 @@ jobs:
           --health-interval 10s 
           --health-timeout 5s 
           --health-retries 5
-
-    env:
-      # la fixture pytest testera la DB de service postgres
-      TEST_PGURL: postgresql://postgres:postgres@localhost:5432/postgres
-      # si tu en as besoin pour tes tests JWT
-      JWT_SECRET: ci-secret-placeholder
+    
+    env:      
+      TEST_PGURL: ${{ secrets.TEST_PGURL }}      
+      PGURL: ${{ secrets.TEST_PGURL }}
+      JWTSECRET: ${{ secrets.JWTSECRET }}
 
     steps:
       - name: 📥 Checkout
