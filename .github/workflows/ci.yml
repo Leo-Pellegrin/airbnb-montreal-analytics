@@ -1,0 +1,87 @@
+name: CI Backend
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-backend:
+    name: 🔬 Tests Backend
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        # Attendre que Postgres soit prêt
+        options: >-
+          --health-cmd "pg_isready -U postgres" 
+          --health-interval 10s 
+          --health-timeout 5s 
+          --health-retries 5
+
+    env:
+      # la fixture pytest testera la DB de service postgres
+      TEST_PGURL: postgresql://postgres:postgres@localhost:5432/postgres
+      # si tu en as besoin pour tes tests JWT
+      JWT_SECRET: ci-secret-placeholder
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v3
+
+      - name: 🐍 Setup Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: 📦 Install dependencies
+        working-directory: ./backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🚀 Run migrations & create tables
+        # si tu utilises create_db_and_tables() dans startup ou un script
+        working-directory: ./backend
+        run: |
+          python - << 'EOF'
+          from app.core.database import create_db_and_tables
+          create_db_and_tables()
+          EOF
+
+      - name: 🧪 Run pytest
+        working-directory: ./backend
+        run: |
+          pytest --maxfail=1 --disable-warnings -q
+
+  lint-backend:
+    name: 🔍 Lint Backend
+    runs-on: ubuntu-latest
+    needs: test-backend
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v3
+
+      - name: 🐍 Setup Python 3.12
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: 📦 Install linting deps
+        working-directory: ./backend
+        run: |
+          pip install flake8
+
+      - name: 📏 Run flake8
+        working-directory: ./backend
+        run: |
+          flake8 .

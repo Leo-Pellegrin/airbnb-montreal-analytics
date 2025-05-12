@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  # --- Base de données PostgreSQL locale pour le dev/tests ---
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  # --- API FastAPI ---
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    environment:
+      # pointe vers la base locale db
+      PGURL: postgresql://postgres:postgres@db:5432/postgres
+      # récupère le JWT_SECRET de ton .env dans l’hôte
+      JWT_SECRET: ${JWT_SECRET}
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # --- Frontend Nuxt 3 ---
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+    environment:
+      # URL que ton front appellera pour atteindre l’API
+      API_URL: http://api:8000/api/v1
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"
+    command: npm run dev
+
+volumes:
+  db_data:
