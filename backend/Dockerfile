@@ -24,7 +24,7 @@ COPY --from=builder /install /usr/local
 
 WORKDIR /app
 # Copies ton code backend dans l’image
-COPY backend/ ./
+COPY . .
 
 # Crée un user non-root
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
