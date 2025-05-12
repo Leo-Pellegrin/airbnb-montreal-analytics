@@ -1,0 +1,10 @@
+[pytest]
+testpaths = tests
+pythonpath = .
+filterwarnings =
+    ignore::DeprecationWarning
+    ignore::pytest.PytestConfigWarning
+    ignore:.*'crypt' is deprecated.*:DeprecationWarning
+    ignore:.*datetime.datetime.utcnow.*:DeprecationWarning
+env =
+    TEST_PGURL=
