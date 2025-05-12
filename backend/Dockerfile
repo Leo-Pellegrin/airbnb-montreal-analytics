@@ -11,6 +11,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Crée un dossier pour l’app et installe les dépendances
 WORKDIR /app
 
+# Installer pg_config (libpq) et gcc pour compiler psycopg2
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      gcc \
+      libpq-dev \
+ && rm -rf /var/lib/apt/lists/*
+
 # Copy only requirements first to leverage Docker cache
 COPY requirements.txt .
 RUN pip install --upgrade pip \
