@@ -12,7 +12,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Copy only requirements first to leverage Docker cache
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --upgrade pip \
     && pip install --prefix=/install -r requirements.txt
 
