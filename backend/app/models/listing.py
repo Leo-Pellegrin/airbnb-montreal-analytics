@@ -6,5 +6,5 @@ class Listings(SQLModel, table=True):
     price: float
     latitude: float
     longitude: float
-    neighbourhood: str = Field(index=True)
+    neighbourhood: str = Field(foreign_key="neighbourhoods.neighbourhood")
     room_type: str

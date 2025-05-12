@@ -1,10 +1,11 @@
 # backend/app/api/v1/endpoints/stats.py
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, text
+from sqlmodel import Session, text, select
 from typing import List
 from app.core.database import get_session
 from app.models.stats import StatsOut
+from app.models.neighbourhoods import Neighbourhoods
 
 router = APIRouter()
 
@@ -13,7 +14,7 @@ router = APIRouter()
     response_model=StatsOut,
     tags=["stats"],
 )
-def stats_by_neigh(
+async def stats_by_neigh(
     neigh: str,
     session: Session = Depends(get_session),
 ):
@@ -23,6 +24,13 @@ def stats_by_neigh(
       • occupancy_pct = moyenne des occupancy_pct
     pour tous les listings du quartier `neigh`.
     """
+    # Vérifier d'abord si le quartier existe
+    neighbourhood = session.exec(
+        select(Neighbourhoods).where(Neighbourhoods.neighbourhood == neigh)
+    ).first()
+    if not neighbourhood:
+        raise HTTPException(status_code=404, detail="Quartier non trouvé")
+
     stmt = text(
         """
         WITH latest AS (
@@ -40,7 +48,7 @@ def stats_by_neigh(
     )
     result = session.exec(stmt.bindparams(neigh=neigh)).first()
     if result is None or result._mapping["median_price"] is None:
-        raise HTTPException(status_code=404, detail="Neighbourhood not found or no data")
+        raise HTTPException(status_code=404, detail="Aucune donnée disponible pour ce quartier")
     return StatsOut(**result._mapping)
 
 

@@ -1,11 +1,8 @@
 from sqlmodel import SQLModel, create_engine, Session
 from app.core.config import settings
 
-# Crée l'engine Postgres
-engine = create_engine(
-    settings.PGURL, 
-    echo=False, 
-)
+engine = create_engine(settings.database_url, echo=False)
+print(f"🚀 Connexion DB utilisée : {settings.database_url}")
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)  # crée toutes les tables

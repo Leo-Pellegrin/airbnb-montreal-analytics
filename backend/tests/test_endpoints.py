@@ -2,15 +2,96 @@
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlmodel import SQLModel, Session
+
 from app.main import app
+from app.core.database import engine
+# Import all models to ensure they're registered with SQLModel
+from app.models.neighbourhoods import Neighbourhoods
+from app.models.listing import Listings
+from app.models.calendar_weekly import calendar_weekly
+from app.models.review import Reviews
 
 client = TestClient(app)
 
+@pytest.fixture(scope="module", autouse=True)
+def setup_db():
+    SQLModel.metadata.create_all(engine)
+    
+    with Session(engine) as session:
+        # Ajout d'un quartier de test
+        test_neighbourhood = Neighbourhoods(neighbourhood="Test Neighbourhood")
+        session.add(test_neighbourhood)
+        session.commit()
+        
+        # Ajout d'un listing de test
+        test_listing = Listings(
+            id=1,  # ID explicite pour référence
+            price=100.0,
+            latitude=45.5,
+            longitude=-73.5,
+            neighbourhood="Test Neighbourhood",
+            room_type="Entire home/apt"
+        )
+        session.add(test_listing)
+        session.commit()
+
+        # Ajout de données calendar_weekly
+        from datetime import date, timedelta
+        today = date.today()
+        test_calendar = calendar_weekly(
+            listing_id=1,  # Référence au listing créé
+            week_id=today,
+            avg_price=100.0,
+            occupancy_pct=0.5
+        )
+        session.add(test_calendar)
+        session.commit()
+    
+    yield
+    
+    from sqlalchemy import text
+    with engine.begin() as conn:
+        conn.execute(text("DROP SCHEMA public CASCADE"))
+        conn.execute(text("CREATE SCHEMA public"))
+
+@pytest.fixture(scope="module")
+def test_user():
+    
+    SQLModel.metadata.create_all(engine)
+
+    password = "testpassword"
+    payload = {
+        "email": "testuser@example.com",
+        "username": "testuser",
+        "password": password,
+        "full_name": "Test User"
+    }
+    # Création
+    res = client.post("/api/v1/users", json=payload)
+    assert res.status_code == 201, f"User creation failed: {res.text}"
+    user_id = res.json()["id"]
+
+    yield {"id": user_id, "password": password, "email": payload["email"]}
+
+    # Teardown
+    client.delete(f"/api/v1/users/{user_id}")
+
+@pytest.fixture(scope="module")
+def auth_headers(test_user):
+    """
+    Se connecte en POST /login pour récupérer le JWT.
+    """
+    login_data = {"email": test_user["email"], "password": test_user["password"]}
+    res = client.post("/api/v1/login", json=login_data)
+    assert res.status_code == 200, f"Login failed: {res.text}"
+    token = res.json().get("access_token")
+    assert token, "No access_token in login response"
+    return {"Authorization": f"Bearer {token}"}
 
 # --- Health Check ---
-
-def test_health_success():
-    res = client.get("/api/v1/health")
+def test_health_success(auth_headers):
+    res = client.get("/api/v1/health", headers=auth_headers)
     assert res.status_code == 200
     json = res.json()
     assert json.get("status") == "ok"
@@ -20,8 +101,8 @@ def test_health_success():
 
 # --- Listings ---
 
-def test_read_listings_default():
-    res = client.get("/api/v1/listings")
+def test_read_listings_default(auth_headers):
+    res = client.get("/api/v1/listings", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert isinstance(data, list)
@@ -36,8 +117,8 @@ def test_read_listings_default():
 
 
 @pytest.mark.parametrize("limit,offset", [(5, 0), (5, 5)])
-def test_listings_pagination(limit, offset):
-    res = client.get(f"/api/v1/listings?limit={limit}&offset={offset}")
+def test_listings_pagination(limit, offset, auth_headers):
+    res = client.get(f"/api/v1/listings?limit={limit}&offset={offset}", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert isinstance(data, list)
@@ -45,8 +126,8 @@ def test_listings_pagination(limit, offset):
 
 
 @pytest.mark.parametrize("rt", ["Entire home/apt", "Private room"])
-def test_listings_filter_room_type(rt):
-    res = client.get(f"/api/v1/listings?room_type={rt}")
+def test_listings_filter_room_type(rt, auth_headers):
+    res = client.get(f"/api/v1/listings?room_type={rt}", headers=auth_headers)
     assert res.status_code == 200
     for item in res.json():
         assert item["room_type"] == rt
@@ -55,19 +136,19 @@ def test_listings_filter_room_type(rt):
 # --- Listing Detail ---
 
 @pytest.mark.parametrize("invalid_id", [0, 9999999])
-def test_listing_detail_not_found(invalid_id):
-    res = client.get(f"/api/v1/listings/{invalid_id}")
+def test_listing_detail_not_found(invalid_id, auth_headers):
+    res = client.get(f"/api/v1/listings/{invalid_id}", headers=auth_headers)
     assert res.status_code == 404
 
 
-def test_listing_detail_found():
+def test_listing_detail_found(auth_headers):
     # on prend un id existant
-    res0 = client.get("/api/v1/listings?limit=1")
+    res0 = client.get("/api/v1/listings?limit=1", headers=auth_headers)
     data0 = res0.json()
     if not data0:
         pytest.skip("Aucun listing dispo pour tester detail")
     lid = data0[0]["id"]
-    res = client.get(f"/api/v1/listings/{lid}")
+    res = client.get(f"/api/v1/listings/{lid}", headers=auth_headers)
     assert res.status_code == 200
     detail = res.json()
     assert detail["id"] == lid
@@ -78,22 +159,22 @@ def test_listing_detail_found():
 
 # --- Stats by neighbourhood ---
 
-def test_stats_by_neigh_invalid():
+def test_stats_by_neigh_invalid(auth_headers):
     """Quartier inconnu → 404"""
-    res = client.get("/api/v1/stats/InvalidNeighbourhood")
+    res = client.get("/api/v1/stats/InvalidNeighbourhood", headers=auth_headers)
     assert res.status_code == 404
 
 
-def test_stats_by_neigh_valid():
+def test_stats_by_neigh_valid(auth_headers):
     """Quartier valide → 200 + median_price & occupancy_pct floats"""
     # récupère un quartier via /listings
-    res0 = client.get("/api/v1/listings?limit=1")
+    res0 = client.get("/api/v1/listings?limit=1", headers=auth_headers)
     data0 = res0.json()
     if not data0:
         pytest.skip("Aucun listing dispo pour tester stats_by_neigh")
     neigh = data0[0]["neighbourhood"]
 
-    res = client.get(f"/api/v1/stats/{neigh}")
+    res = client.get(f"/api/v1/stats/{neigh}", headers=auth_headers)
     assert res.status_code == 200
     stats = res.json()
     assert "median_price" in stats
@@ -104,22 +185,22 @@ def test_stats_by_neigh_valid():
 
 # --- Stats history ---
 
-def test_stats_history_invalid_neigh():
+def test_stats_history_invalid_neigh(auth_headers):
     """History pour un quartier inconnu → liste vide"""
-    res = client.get("/api/v1/stats/InvalidNeighbourhood/history")
+    res = client.get("/api/v1/stats/InvalidNeighbourhood/history", headers=auth_headers)
     assert res.status_code == 200
     assert res.json() == []
 
 
-def test_stats_history_valid_neigh():
+def test_stats_history_valid_neigh(auth_headers):
     """History pour un quartier valide → liste d’items avec period_id, median_price, occupancy_pct"""
-    res0 = client.get("/api/v1/listings?limit=1")
+    res0 = client.get("/api/v1/listings?limit=1", headers=auth_headers)
     data0 = res0.json()
     if not data0:
         pytest.skip("Aucun listing dispo pour tester stats_history")
     neigh = data0[0]["neighbourhood"]
 
-    res = client.get(f"/api/v1/stats/{neigh}/history")
+    res = client.get(f"/api/v1/stats/{neigh}/history", headers=auth_headers)
     assert res.status_code == 200
     hist = res.json()
     assert isinstance(hist, list)

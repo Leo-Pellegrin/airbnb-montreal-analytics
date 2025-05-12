@@ -4,14 +4,14 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
-from core.database import get_session
+from app.core.database import get_session
 from app.models.role import Role, RoleCreate, RoleRead, RoleUpdate  # à créer
 
 router = APIRouter(prefix="/roles", tags=["roles"])
 
 @router.post("/", response_model=RoleRead, status_code=status.HTTP_201_CREATED)
 def create_role(payload: RoleCreate, session: Session = Depends(get_session)):
-    role = Role.from_orm(payload)
+    role = Role.model_validate(payload)
     session.add(role)
     session.commit()
     session.refresh(role)
@@ -34,7 +34,7 @@ def update_role(role_id: int, payload: RoleUpdate, session: Session = Depends(ge
     role = session.get(Role, role_id)
     if not role:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Role not found")
-    role_data = payload.dict(exclude_unset=True)
+    role_data = payload.model_dump(exclude_unset=True)
     for k, v in role_data.items():
         setattr(role, k, v)
     session.add(role)
