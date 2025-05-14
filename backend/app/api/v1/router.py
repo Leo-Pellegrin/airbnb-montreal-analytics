@@ -14,7 +14,7 @@ api_router.include_router(
     stats.router, tags=["stats"], dependencies=[Depends(get_current_user)]
 )
 api_router.include_router(
-    health.router, tags=["health"], dependencies=[Depends(get_current_user)]
+    health.router, tags=["health"]
 )
 api_router.include_router(
     neighbourhoods.router,

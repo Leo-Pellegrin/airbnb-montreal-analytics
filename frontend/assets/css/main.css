@@ -1,0 +1,12 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+:root {
+    --ui-primary: #FF5A5F;
+    --ui-secondary: #00A699;
+    --ui-orange: #FC642D;
+    --ui-graylight: #F7F7F7;
+    --ui-gray: #767676;
+    --ui-bgcolor: #F3F5F7;
+    --ui-graydark: #484848;
+}
