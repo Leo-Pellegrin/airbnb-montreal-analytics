@@ -1,10 +1,10 @@
 from typing import List
 
 from fastapi import APIRouter, Depends
-from sqlmodel import Session, distinct, select
+from sqlmodel import Session, select
 
 from app.core.database import get_session
-from app.models.listing import Listings
+from app.models.neighbourhoods import Neighbourhoods
 
 router = APIRouter()
 
@@ -15,5 +15,5 @@ router = APIRouter()
     tags=["neighbourhoods"],
 )
 def read_neighbourhoods(session: Session = Depends(get_session)):
-    stmt = select(distinct(Listings.neighbourhood))
-    return [row[0] for row in session.exec(stmt).all()]
+    result = [row.neighbourhood for row in session.exec(select(Neighbourhoods)).all()]
+    return result

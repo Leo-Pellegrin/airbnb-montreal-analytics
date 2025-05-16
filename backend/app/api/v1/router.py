@@ -1,28 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from app.core.auth import get_current_user
+# from app.core.auth import get_current_user  # plus besoin
 
-from .endpoints import (auth, health, listings, neighbourhoods, role, stats,
-                        users)
+from .endpoints import health, listings, neighbourhoods, stats
 
 api_router = APIRouter()
 
-api_router.include_router(
-    listings.router, tags=["listings"], dependencies=[Depends(get_current_user)]
-)
-api_router.include_router(
-    stats.router, tags=["stats"], dependencies=[Depends(get_current_user)]
-)
-api_router.include_router(
-    health.router, tags=["health"]
-)
-api_router.include_router(
-    neighbourhoods.router,
-    tags=["neighbourhoods"],
-    dependencies=[Depends(get_current_user)],
-)
-api_router.include_router(
-    role.router, tags=["role"], dependencies=[Depends(get_current_user)]
-)
-api_router.include_router(users.router, tags=["users"])
-api_router.include_router(auth.router, tags=["auth"])
+api_router.include_router(listings.router, tags=["listings"])
+api_router.include_router(stats.router, tags=["stats"])
+api_router.include_router(health.router, tags=["health"])
+api_router.include_router(neighbourhoods.router, tags=["neighbourhoods"])

@@ -4,10 +4,11 @@ async def get_listings(
     offset: int,
     room_type: str | None = None,
     price_max: float | None = None,
+    host_id: int | None = None,
 ):
     # Requête de base
     sql = """
-    SELECT id, price, latitude, longitude, neighbourhood, room_type
+    SELECT id, price, latitude, longitude, neighbourhood, room_type, host_id
     FROM listings
     WHERE TRUE
     """

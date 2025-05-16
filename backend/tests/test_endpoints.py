@@ -3,34 +3,46 @@
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel
+from sqlalchemy import select
 
 from app.core.database import engine
 from app.main import app
 from app.models.calendar_weekly import calendar_weekly
+from app.models.review import Reviews
 from app.models.listing import Listings
-# Import all models to ensure they're registered with SQLModel
 from app.models.neighbourhoods import Neighbourhoods
 
 client = TestClient(app)
 
 
+def clean_db():
+    from sqlalchemy import text
+
+    with engine.begin() as conn:
+        conn.execute(text("DROP SCHEMA public CASCADE"))
+        conn.execute(text("CREATE SCHEMA public"))
+
+
 @pytest.fixture(scope="module", autouse=True)
 def setup_db():
+    clean_db()
+
     SQLModel.metadata.create_all(engine)
 
     with Session(engine) as session:
         # Ajout d'un quartier de test
-        test_neighbourhood = Neighbourhoods(neighbourhood="Test Neighbourhood")
+        test_neighbourhood = Neighbourhoods(neighbourhood="Test Neighbourhood 1")
         session.add(test_neighbourhood)
         session.commit()
 
         # Ajout d'un listing de test
         test_listing = Listings(
-            id=1,  # ID explicite pour référence
+            id=1,
+            host_id=1,
             price=100.0,
             latitude=45.5,
             longitude=-73.5,
-            neighbourhood="Test Neighbourhood",
+            neighbourhood=test_neighbourhood.neighbourhood,
             room_type="Entire home/apt",
         )
         session.add(test_listing)
@@ -49,53 +61,29 @@ def setup_db():
         session.add(test_calendar)
         session.commit()
 
+        review = Reviews(
+            id=1,
+            listing_id=1,
+            date=date.today(),
+            reviewer_id=1,
+            reviewer_name="Test",
+            comments="Bien",
+        )
+        print("DEBUG review à insérer:", review)
+
+        session.add(review)
+        session.commit()
+
     yield
 
-    from sqlalchemy import text
-
-    with engine.begin() as conn:
-        conn.execute(text("DROP SCHEMA public CASCADE"))
-        conn.execute(text("CREATE SCHEMA public"))
-
-
-@pytest.fixture(scope="module")
-def test_user():
-    SQLModel.metadata.create_all(engine)
-
-    password = "testpassword"
-    payload = {
-        "email": "testuser@example.com",
-        "username": "testuser",
-        "password": password,
-        "full_name": "Test User",
-    }
-    # Création
-    res = client.post("/api/v1/users", json=payload)
-    assert res.status_code == 201, f"User creation failed: {res.text}"
-    user_id = res.json()["id"]
-
-    yield {"id": user_id, "password": password, "email": payload["email"]}
-
-    # Teardown
-    client.delete(f"/api/v1/users/{user_id}")
-
-
-@pytest.fixture(scope="module")
-def auth_headers(test_user):
-    """
-    Se connecte en POST /login pour récupérer le JWT.
-    """
-    login_data = {"email": test_user["email"], "password": test_user["password"]}
-    res = client.post("/api/v1/login", json=login_data)
-    assert res.status_code == 200, f"Login failed: {res.text}"
-    token = res.json().get("access_token")
-    assert token, "No access_token in login response"
-    return {"Authorization": f"Bearer {token}"}
+    # clean_db()
 
 
 # --- Health Check ---
-def test_health_success(auth_headers):
-    res = client.get("/api/v1/health", headers=auth_headers)
+def test_health_success():
+    res = client.get(
+        "/api/v1/health",
+    )
     assert res.status_code == 200
     json = res.json()
     assert json.get("status") == "ok"
@@ -106,8 +94,10 @@ def test_health_success(auth_headers):
 # --- Listings ---
 
 
-def test_read_listings_default(auth_headers):
-    res = client.get("/api/v1/listings", headers=auth_headers)
+def test_read_listings_default():
+    res = client.get(
+        "/api/v1/listings",
+    )
     assert res.status_code == 200
     data = res.json()
     assert isinstance(data, list)
@@ -127,9 +117,12 @@ def test_read_listings_default(auth_headers):
 
 
 @pytest.mark.parametrize("limit,offset", [(5, 0), (5, 5)])
-def test_listings_pagination(limit, offset, auth_headers):
+def test_listings_pagination(
+    limit,
+    offset,
+):
     res = client.get(
-        f"/api/v1/listings?limit={limit}&offset={offset}", headers=auth_headers
+        f"/api/v1/listings?limit={limit}&offset={offset}",
     )
     assert res.status_code == 200
     data = res.json()
@@ -138,8 +131,12 @@ def test_listings_pagination(limit, offset, auth_headers):
 
 
 @pytest.mark.parametrize("rt", ["Entire home/apt", "Private room"])
-def test_listings_filter_room_type(rt, auth_headers):
-    res = client.get(f"/api/v1/listings?room_type={rt}", headers=auth_headers)
+def test_listings_filter_room_type(
+    rt,
+):
+    res = client.get(
+        f"/api/v1/listings?room_type={rt}",
+    )
     assert res.status_code == 200
     for item in res.json():
         assert item["room_type"] == rt
@@ -149,19 +146,27 @@ def test_listings_filter_room_type(rt, auth_headers):
 
 
 @pytest.mark.parametrize("invalid_id", [0, 9999999])
-def test_listing_detail_not_found(invalid_id, auth_headers):
-    res = client.get(f"/api/v1/listings/{invalid_id}", headers=auth_headers)
+def test_listing_detail_not_found(
+    invalid_id,
+):
+    res = client.get(
+        f"/api/v1/listings/{invalid_id}",
+    )
     assert res.status_code == 404
 
 
-def test_listing_detail_found(auth_headers):
+def test_listing_detail_found():
     # on prend un id existant
-    res0 = client.get("/api/v1/listings?limit=1", headers=auth_headers)
+    res0 = client.get(
+        "/api/v1/listings?limit=1",
+    )
     data0 = res0.json()
     if not data0:
         pytest.skip("Aucun listing dispo pour tester detail")
     lid = data0[0]["id"]
-    res = client.get(f"/api/v1/listings/{lid}", headers=auth_headers)
+    res = client.get(
+        f"/api/v1/listings/{lid}",
+    )
     assert res.status_code == 200
     detail = res.json()
     assert detail["id"] == lid
@@ -178,22 +183,28 @@ def test_listing_detail_found(auth_headers):
 # --- Stats by neighbourhood ---
 
 
-def test_stats_by_neigh_invalid(auth_headers):
+def test_stats_by_neigh_invalid():
     """Quartier inconnu → 404"""
-    res = client.get("/api/v1/stats/InvalidNeighbourhood", headers=auth_headers)
+    res = client.get(
+        "/api/v1/stats/InvalidNeighbourhood",
+    )
     assert res.status_code == 404
 
 
-def test_stats_by_neigh_valid(auth_headers):
+def test_stats_by_neigh_valid():
     """Quartier valide → 200 + median_price & occupancy_pct floats"""
     # récupère un quartier via /listings
-    res0 = client.get("/api/v1/listings?limit=1", headers=auth_headers)
+    res0 = client.get(
+        "/api/v1/listings?limit=1",
+    )
     data0 = res0.json()
     if not data0:
         pytest.skip("Aucun listing dispo pour tester stats_by_neigh")
     neigh = data0[0]["neighbourhood"]
 
-    res = client.get(f"/api/v1/stats/{neigh}", headers=auth_headers)
+    res = client.get(
+        f"/api/v1/stats/{neigh}",
+    )
     assert res.status_code == 200
     stats = res.json()
     assert "median_price" in stats
@@ -201,22 +212,31 @@ def test_stats_by_neigh_valid(auth_headers):
     assert isinstance(stats["median_price"], float)
     assert isinstance(stats["occupancy_pct"], float)
 
+
 # --- Stats history ---
 
-def test_stats_history_invalid_neigh(auth_headers):
+
+def test_stats_history_invalid_neigh():
     """History pour un quartier inconnu → liste vide"""
-    res = client.get("/api/v1/stats/InvalidNeighbourhood/history", headers=auth_headers)
+    res = client.get(
+        "/api/v1/stats/InvalidNeighbourhood/history",
+    )
     assert res.status_code == 200
     assert res.json() == []
 
-def test_stats_history_valid_neigh(auth_headers):
-    res0 = client.get("/api/v1/listings?limit=1", headers=auth_headers)
+
+def test_stats_history_valid_neigh():
+    res0 = client.get(
+        "/api/v1/listings?limit=1",
+    )
     data0 = res0.json()
     if not data0:
         pytest.skip("Aucun listing dispo pour tester stats_history")
     neigh = data0[0]["neighbourhood"]
 
-    res = client.get(f"/api/v1/stats/{neigh}/history", headers=auth_headers)
+    res = client.get(
+        f"/api/v1/stats/{neigh}/history",
+    )
     assert res.status_code == 200
     hist = res.json()
     assert isinstance(hist, list)
@@ -227,3 +247,75 @@ def test_stats_history_valid_neigh(auth_headers):
         # period_id peut être str ou int
         assert isinstance(item["median_price"], float)
         assert isinstance(item["occupancy_pct"], float)
+
+
+# --- Neighbourhoods ---
+def test_read_neighbourhoods():
+    res = client.get("/api/v1/neighbourhoods")
+    assert res.status_code == 200
+    data = res.json()
+    assert isinstance(data, list)
+    # Doit contenir au moins le quartier de test
+    assert "Test Neighbourhood 1" in data
+
+
+def test_read_neighbourhoods_empty(monkeypatch):
+    # Monkeypatch Listings pour simuler aucun quartier
+    orig_exec = Session.exec
+
+    def fake_exec(self, *a, **kw):
+        class FakeResult:
+            def all(self):
+                return []
+
+        return FakeResult()
+
+    monkeypatch.setattr(Session, "exec", fake_exec)
+    res = client.get("/api/v1/neighbourhoods")
+    assert res.status_code == 200
+    assert res.json() == []
+    monkeypatch.setattr(Session, "exec", orig_exec)
+
+
+# --- Reviews for Listing ---
+def test_reviews_for_listing_success():
+    res = client.get("/api/v1/listings/1/reviews")
+    assert res.status_code == 200
+    data = res.json()
+    assert isinstance(data, list)
+    assert any(r["reviewer_name"] == "Test" for r in data)
+
+
+def test_reviews_for_listing_not_found():
+    res = client.get("/api/v1/listings/999999/reviews")
+    assert res.status_code == 200
+    assert res.json() == []
+
+
+def test_reviews_for_listing_empty():
+    # Ajoute un listing sans review
+    from app.models.listing import Listings
+
+    with Session(engine) as session:
+        listing = Listings(
+            id=12345,
+            price=10,
+            latitude=0,
+            longitude=0,
+            neighbourhood="Test Neighbourhood 1",
+            room_type="Test",
+            host_id=1,
+        )
+        session.add(listing)
+        session.commit()
+    res = client.get("/api/v1/listings/12345/reviews")
+    assert res.status_code == 200
+    assert res.json() == []
+
+
+def test_debug_all_neighs():
+    from app.models.neighbourhoods import Neighbourhoods
+
+    with Session(engine) as session:
+        all_neighs = session.exec(select(Neighbourhoods)).all()
+        print("DEBUG ALL NEIGHS:", all_neighs)
