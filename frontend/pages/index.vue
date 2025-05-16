@@ -112,7 +112,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="p-4 md:p-6 lg:p-8 space-y-6 bg-[#d0d0d076]">
+    <div class="p-4 md:p-6 lg:p-8 space-y-6 bg-[#d0d0d076] container">
 
         <!-- KPI CARDS -->
 
