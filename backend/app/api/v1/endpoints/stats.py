@@ -13,6 +13,107 @@ router = APIRouter()
 
 
 @router.get(
+    "/stats/median_price",
+    response_model=int,
+    tags=["stats"],
+)
+async def stats_median_price(
+    session: Session = Depends(get_session),
+):
+    """
+    Médiane des prix des listings pour tous les quartiers.
+    """
+    stmt = text(
+        """
+        WITH latest AS (
+          SELECT MAX(week_id) AS week_id
+          FROM calendar_weekly
+        )
+        SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY avg_price) AS median_price
+        FROM calendar_weekly
+        JOIN listings ON calendar_weekly.listing_id = listings.id
+        JOIN latest ON calendar_weekly.week_id = latest.week_id
+        """
+    )
+    result = session.exec(stmt).first()
+    if result is None or result._mapping["median_price"] is None:
+        raise HTTPException(
+            status_code=404, detail="Aucune donnée disponible pour le calcul de la médiane des prix"
+        )
+    return result._mapping["median_price"]
+
+@router.get(
+    "/stats/occupancy_pct",
+    response_model=float,
+    tags=["stats"],
+)
+async def stats_occupancy_pct(
+    session: Session = Depends(get_session),
+):
+    """
+    Moyenne des taux d'occupation pour tous les quartiers.
+    """
+    stmt = text(
+        """
+        WITH latest AS (
+          SELECT MAX(week_id) AS week_id
+          FROM calendar_weekly
+        )
+        SELECT AVG(occupancy_pct) AS occupancy_pct
+        FROM calendar_weekly
+        JOIN listings ON calendar_weekly.listing_id = listings.id
+        JOIN latest ON calendar_weekly.week_id = latest.week_id
+        """
+    )
+    result = session.exec(stmt).first()
+    if result is None or result._mapping["occupancy_pct"] is None:
+        raise HTTPException(
+            status_code=404, detail="Aucune donnée disponible pour le calcul de la moyenne des taux d'occupation"
+        )
+    return result._mapping["occupancy_pct"]
+
+@router.get(
+    "/stats/avg_sentiment",
+    response_model=float,
+    tags=["stats"], 
+)
+async def stats_avg_sentiment(
+    session: Session = Depends(get_session),
+):
+    from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+    sia = SentimentIntensityAnalyzer()
+
+    def vader_score(text: str) -> float:
+        return sia.polarity_scores(text)["compound"]
+    
+    """
+    Moyenne des sentiments pour tous les quartiers.
+    """
+    stmt = text(
+        """
+        SELECT comments
+        FROM reviews
+        WHERE comments IS NOT NULL
+        """
+    )
+    results = session.exec(stmt).all()
+    
+    if not results:
+        raise HTTPException(
+            status_code=404, 
+            detail="Aucune donnée disponible pour le calcul de la moyenne des sentiments"
+        )
+    
+    # Calculer le sentiment pour chaque commentaire
+    sentiments = [vader_score(review.comments) for review in results]
+    
+    # Calculer la moyenne
+    avg_sentiment = sum(sentiments) / len(sentiments)
+    
+    return avg_sentiment
+
+@router.get(
     "/stats/{neigh}",
     response_model=StatsOut,
     tags=["stats"],

@@ -26,9 +26,24 @@ echo "🔗  Connexion  : $PGURL"
 echo "📂  Source CSV : $CLEAN_DIR"
 echo "--------------------------------------------------------"
 
-# ---------- 1. Schéma (tables, index, RLS) --------------------
+# ---------- 1. Suppression des tables existantes --------------------
+echo "🗑️  Suppression des tables existantes..."
+psql "$PGURL" <<'SQL'
+DROP TABLE IF EXISTS public.calendar_weekly CASCADE;
+DROP TABLE IF EXISTS public.reviews CASCADE;
+DROP TABLE IF EXISTS public.listings CASCADE;
+DROP TABLE IF EXISTS public.neighbourhoods CASCADE;
+SQL
+
+# ---------- 2. Schéma (tables, index, RLS) --------------------
 psql "$PGURL" <<'SQL'
 BEGIN;
+
+-- Suppression des tables existantes
+DROP TABLE IF EXISTS public.neighbourhoods;
+DROP TABLE IF EXISTS public.listings;
+DROP TABLE IF EXISTS public.calendar_weekly;
+DROP TABLE IF EXISTS public.reviews;
 
 -- neighbourhoods
 CREATE TABLE IF NOT EXISTS public.neighbourhoods (
@@ -81,13 +96,13 @@ CREATE INDEX IF NOT EXISTS idx_reviews_listing_date      ON public.reviews      
 COMMIT;
 SQL
 
-# ---------- 2. Vider tables (ordre enfants -> parents) --------
+# ---------- 3. Vider tables (ordre enfants -> parents) --------
 psql "$PGURL" -c "TRUNCATE TABLE public.calendar_weekly CASCADE;"
 psql "$PGURL" -c "TRUNCATE TABLE public.reviews         CASCADE;"
 psql "$PGURL" -c "TRUNCATE TABLE public.listings        CASCADE;"
 psql "$PGURL" -c "TRUNCATE TABLE public.neighbourhoods  CASCADE;"
 
-# ---------- 3. Import CSV via \copy ---------------------------
+# ---------- 4. Import CSV via \copy ---------------------------
 echo "⬆️  Import CSV ..."
 
 psql "$PGURL" <<SQL
@@ -97,7 +112,7 @@ psql "$PGURL" <<SQL
 \copy public.reviews FROM '$CLEAN_DIR/reviews_clean.csv' CSV HEADER;
 SQL
 
-# ---------- 4. Récap lignes -----------------------------------
+# ---------- 5. Récap lignes -----------------------------------
 echo "✅  Import terminé. Compte des lignes :"
 psql "$PGURL" -c "
 SELECT 'neighbourhoods' AS table_name, COUNT(*) FROM public.neighbourhoods UNION ALL
