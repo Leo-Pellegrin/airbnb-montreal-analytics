@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, watch, computed, reactive } from 'vue'
+import { useStats } from '../composables/useStats'
+
 interface Listing {
     id: string
     name: string
@@ -10,6 +12,8 @@ interface Listing {
     rating: number
 }
 
+const { stats, fetchStats } = useStats()
+
 const listings = ref<Listing[]>([
     { id: '12345', name: 'Cozy Loft', neighborhood: 'Downtown', roomType: 'Entire Home', price: 150, occupancyRate: 80, rating: 4.5 },
     { id: '67890', name: 'Sunny Apartment', neighborhood: 'Plateau', roomType: 'Private Room', price: 95, occupancyRate: 65, rating: 4.3 },
@@ -17,11 +21,23 @@ const listings = ref<Listing[]>([
 ])
 
 // KPI cards
-const kpiData = {
-    price: { icon: 'i-heroicons-currency-dollar', label: 'Median Price', value: '93' },
-    occupancy: { icon: 'i-heroicons-chart-bar', label: 'Occupancy Rate', value: '43.5%' },
-    sentiment: { icon: 'i-heroicons-face-smile', label: 'Avg Review Sentiment', value: '0.64' },
-}
+const kpiData = computed(() => ({
+    price: {
+        icon: 'i-heroicons-currency-dollar',
+        label: 'Median Price',
+        value: stats.value.medianPrice ? `$${stats.value.medianPrice}` : 'Loading...'
+    },
+    occupancy: {
+        icon: 'i-heroicons-chart-bar',
+        label: 'Occupancy Rate',
+        value: stats.value.occupancyPct ? `${(stats.value.occupancyPct * 100).toFixed(1)}%` : 'Loading...'
+    },
+    sentiment: {
+        icon: 'i-heroicons-face-smile',
+        label: 'Avg Review Sentiment',
+        value: stats.value.avgSentiment ? stats.value.avgSentiment.toFixed(2) : 'Loading...'
+    },
+}))
 
 // Map & chart data (mock)
 const geoData = ref<any>(null)
@@ -48,7 +64,9 @@ const neighOptions = [
 ]
 const kpiOptions = [
     { label: 'Prix médian', value: 'price' },
-    { label: 'Taux d’occupation', value: 'occupancy' },
+    {
+        label: 'Taux d\'occupation', value: 'occupancy'
+    },
     { label: 'Sentiment', value: 'sentiment' },
 ]
 const roomOptions = [
@@ -105,9 +123,8 @@ const filteredListings = computed(() =>
 )
 
 onMounted(async () => {
-    // mock fetch geoData & trendData
-    // geoData.value = await fetch('/montreal-neighbourhoods.json').then(r => r.json())
-    // trendData.value = ...
+    await fetchStats()
+  
 })
 </script>
 
@@ -132,9 +149,9 @@ onMounted(async () => {
         </div>
 
         <!-- FILTERS -->
-      
+
         <UCard>
-            <ListingsTable/>
+            <ListingsTable />
         </UCard>
     </div>
 </template>

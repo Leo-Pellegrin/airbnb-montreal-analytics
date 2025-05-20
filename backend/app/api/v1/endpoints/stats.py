@@ -38,9 +38,11 @@ async def stats_median_price(
     result = session.exec(stmt).first()
     if result is None or result._mapping["median_price"] is None:
         raise HTTPException(
-            status_code=404, detail="Aucune donnée disponible pour le calcul de la médiane des prix"
+            status_code=404,
+            detail="Aucune donnée disponible pour le calcul de la médiane des prix",
         )
     return result._mapping["median_price"]
+
 
 @router.get(
     "/stats/occupancy_pct",
@@ -68,14 +70,16 @@ async def stats_occupancy_pct(
     result = session.exec(stmt).first()
     if result is None or result._mapping["occupancy_pct"] is None:
         raise HTTPException(
-            status_code=404, detail="Aucune donnée disponible pour le calcul de la moyenne des taux d'occupation"
+            status_code=404,
+            detail="Aucune donnée disponible pour le calcul de la moyenne des taux d'occupation",
         )
     return result._mapping["occupancy_pct"]
+
 
 @router.get(
     "/stats/avg_sentiment",
     response_model=float,
-    tags=["stats"], 
+    tags=["stats"],
 )
 async def stats_avg_sentiment(
     session: Session = Depends(get_session),
@@ -86,7 +90,7 @@ async def stats_avg_sentiment(
 
     def vader_score(text: str) -> float:
         return sia.polarity_scores(text)["compound"]
-    
+
     """
     Moyenne des sentiments pour tous les quartiers.
     """
@@ -98,20 +102,21 @@ async def stats_avg_sentiment(
         """
     )
     results = session.exec(stmt).all()
-    
+
     if not results:
         raise HTTPException(
-            status_code=404, 
-            detail="Aucune donnée disponible pour le calcul de la moyenne des sentiments"
+            status_code=404,
+            detail="Aucune donnée disponible pour le calcul de la moyenne des sentiments",
         )
-    
+
     # Calculer le sentiment pour chaque commentaire
     sentiments = [vader_score(review.comments) for review in results]
-    
+
     # Calculer la moyenne
     avg_sentiment = sum(sentiments) / len(sentiments)
-    
+
     return avg_sentiment
+
 
 @router.get(
     "/stats/{neigh}",
