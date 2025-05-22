@@ -27,19 +27,18 @@ export const useStats = () => {
         try {
             // Fetch median price
             const { data: medianPrice } = await useFetch<number>(`${API_BASE}/api/v1/stats/median_price`)
-            console.log(medianPrice.value)
             if (typeof medianPrice.value !== 'number') throw new Error('Erreur lors de la récupération du prix médian')
             stats.value.medianPrice = medianPrice.value
 
             // Fetch occupancy percentage
-            const { data: occupancy } = await useFetch<{ data: number }>(`${API_BASE}/api/v1/stats/occupancy_pct`)
+            const { data: occupancy } = await useFetch<number>(`${API_BASE}/api/v1/stats/occupancy_pct`)
             if (!occupancy.value) throw new Error('Erreur lors de la récupération du taux d\'occupation')
-            stats.value.occupancyPct = occupancy.value.data
+            stats.value.occupancyPct = occupancy.value
 
             // Fetch average sentiment
-            const { data: sentiment } = await useFetch<{ data: number }>(`${API_BASE}/api/v1/stats/avg_sentiment`)
-            if (!sentiment.value) throw new Error('Erreur lors de la récupération du sentiment moyen')
-            stats.value.avgSentiment = sentiment.value.data
+            const { data: sentiment } = await useFetch<number>(`${API_BASE}/api/v1/stats/avg_sentiment`)                    
+            if (typeof sentiment.value !== 'number') throw new Error('Erreur lors de la récupération du sentiment moyen')
+            stats.value.avgSentiment = sentiment.value
 
         } catch (error) {
             stats.value.error = error instanceof Error ? error.message : 'Une erreur est survenue'

@@ -9,9 +9,7 @@
             <SidebarItem icon="i-heroicons-map" label="NEIGHBORHOOD STATS" to="/neighbourhoods"
                 :active="route.path === '/neighbourhoods'" />
             <SidebarItem icon="i-heroicons-chat-bubble-left-right" label="REVIEWS" to="/reviews"
-                :active="route.path === '/reviews'" />
-            <SidebarItem icon="i-heroicons-cog-6-tooth" label="SETTINGS" to="/settings"
-                :active="route.path === '/settings'" />
+                :active="route.path === '/reviews'" />                        
         </nav>
     </aside>
 </template>

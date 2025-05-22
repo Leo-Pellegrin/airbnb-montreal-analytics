@@ -101,8 +101,7 @@ async def stats_avg_sentiment(
         WHERE comments IS NOT NULL
         """
     )
-    results = session.exec(stmt).all()
-
+    results = session.exec(stmt).all()    
     if not results:
         raise HTTPException(
             status_code=404,
@@ -111,9 +110,9 @@ async def stats_avg_sentiment(
 
     # Calculer le sentiment pour chaque commentaire
     sentiments = [vader_score(review.comments) for review in results]
-
+    
     # Calculer la moyenne
-    avg_sentiment = sum(sentiments) / len(sentiments)
+    avg_sentiment = sum(sentiments) / len(sentiments)    
 
     return avg_sentiment
 
